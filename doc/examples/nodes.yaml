@@ -1,0 +1,48 @@
+--- #Basic structure
+# Nodes can be a nodeId (integer), remoteID (string), path (starts with a slash)
+
+# Default prefix for object remote-ids, it is appended by a random hash. If omitted, the name of the input-file is used.
+remoteIdPrefix: mytree
+
+# The "assets"-key is a metaphoric namespace for collecting re-usable elements and providing references (merge-keys).
+assets:
+
+  # Queue below NodeID #2 of class "clip".
+  clipItems: &videoItems
+    # will create any number of elements, depending on the result
+    # any fetch-combination you want, see doc.ez.no for fetch-parameters.
+    # ezpublish/fetch/content/list {parent_node_id: 2, class_filter_array: [frontpage], class_filter_type: include}
+    #   as:         [node_id, object_id]                # specifiy any attribute / data-map value you want to output
+    #   as:         {node_id: id, object_id: object}    # alternative: map input attributes to output attributes.
+    items:
+      function:           ezpublish/fetch/content/list
+      parent_node_id:     2
+      class_filter_array: [frontpage]
+      class_filter_type:  include
+      limit:              10
+      as:                 {node_id: node_id, contentobject_id: object_id}
+
+content:
+
+  - name:       MyFrontpage
+    parentNode: 2
+    class:      frontpage
+    remote_id:  mytree
+    children:
+      - name:  Home
+        class: frontpage
+
+      - name:  Videos
+        class: frontpage
+
+      - title: Charaktere
+        class: folder
+        remote_id:  mytree:charaktere
+        children:
+          - name:  Lorem von Ipsum
+            class: article
+          - name:  Dolor Amet
+            class: article
+
+      - title: Bilder
+        class: folder
