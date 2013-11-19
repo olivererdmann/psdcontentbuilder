@@ -287,7 +287,20 @@ class psdContentBuilderCLI
 
             EXAMPLES:
 
-                TBD.
+              FYI: Run all commands relative to the root of your eZ Publish installation!
+
+              Apply a structure to the default site-access:
+              $ php psdcontentbuildercli.php --apply="path/to/structure.yaml"
+
+              Apply a structure to a defined site-access:
+              $ php psdcontentbuildercli.php --apply="path/to/structure.yaml" --site-access=NAME-OF-SITEACCESS
+
+
+              Undo a recent application:
+              > Undo String:
+              > 123456,456778
+
+              $ php psdcontentbuildercli.php --remove=123456,456778 --site-access=NAME-OF-SITEACCESS
 
             ';
 
