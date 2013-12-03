@@ -10,7 +10,6 @@ require_once 'autoload.php';
  * @TODO: Optimize Structure
  * @TODO: Block-Items, add timings.
  * @TODO: Add proper verbose cli-output and error-reporting.
- * @TODO: Handler for other data-types: psdNgTeaser,psdAdtrack, psdTags, psdAirdate.
  * @TODO: Check ObjectRelation/List.
  * @TODO: check if raw input on data_text / data_int works. Allow raw XML with the toXML-function.
  *
@@ -67,6 +66,7 @@ class psdContentBuilderCLI
     {
 
     }
+
 
     /**
      * Main execution loop. Specifies the command-line arguments and loops through a set of functions, each picking
@@ -204,6 +204,7 @@ class psdContentBuilderCLI
             $builder = new psdContentBuilder($file);
 
             $builder->verbose = $this->verbose;
+            $builder->logLineCallback = array($this, 'logLine');
             $builder->apply();
 
         }

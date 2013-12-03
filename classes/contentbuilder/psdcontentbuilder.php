@@ -59,9 +59,16 @@ class psdContentBuilder
     /**
      * Tell the builder to be talkative.
      *
-     * @var bool
+     * @var boolean
      */
     public $verbose = false;
+
+    /**
+     * Holds an external logline callback. Must accept 2 string-parameters.
+     *
+     * @var void
+     */
+    public $logLineCallback;
 
 
     /**
@@ -386,6 +393,28 @@ class psdContentBuilder
         $handlers = $ini->variable('Handlers', 'YamlFunctions');
 
         $this->postProcessor->addMultipleFunctionHandlers($handlers);
+
+    }
+
+
+    /**
+     * Calls an optional external logLine-function. Defaults to eZDebug::writeNotice if no callback is defined.
+     *
+     * @param string $str    String to log.
+     * @param string $method Calling method.
+     *
+     * @return void
+     */
+    public function logLine($str, $method = '')
+    {
+
+        if (is_callable($this->logLineCallback)) {
+            $this->logLineCallback($str, $method);
+
+            return;
+        }
+
+        eZDebug::writeNotice('*'.__CLASS__.': '.$str, $method);
 
     }
 
