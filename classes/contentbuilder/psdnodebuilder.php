@@ -232,6 +232,21 @@ class psdNodeBuilder
         }
         $contentOptions->remote_id = $options['remote_id'];
 
+        // Remove existing objects with same Remote-ID, but no Main-Node (orphaned objects from failed builds).
+        $nodeWithRemoteId = eZContentObject::fetchByRemoteID($options['remote_id']);
+
+        if ($nodeWithRemoteId instanceof eZContentObject && !$nodeWithRemoteId->attribute('main_node_id')) {
+            $this->cli->output(
+                sprintf(
+                    'Orphaned Object with Remote-ID "%s" already exists and will be removed.',
+                    $options['remote_id']
+                )
+            );
+
+            $nodeWithRemoteId->remove();
+
+        }
+
         if ($this->verbose) {
             $url = '/'.$locationNode->attribute('url');
             $this->cli->output(

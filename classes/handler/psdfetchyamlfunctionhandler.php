@@ -89,10 +89,9 @@ class psdFetchYamlFunctionHandler extends psdAbstractYamlFunctionHandler
 
         $result = array();
 
-        // Ensure correct input-values.
-        if (empty($fields) || (!is_array($element) && !($element instanceof eZPersistentObject))
-        ) {
-            return $result;
+        // Return element, if there's no field-mapping.
+        if (empty($fields)) {
+            return $element;
         }
 
         foreach ($fields as $key => $value) {
