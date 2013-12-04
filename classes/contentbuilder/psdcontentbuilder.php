@@ -198,7 +198,7 @@ class psdContentBuilder
      * a valid node-ID (numeric), a remote-ID (string) or a path (starts with a "/").
      *
      * @param mixed   $location        Specifies the location of a node.
-     *                                 Can be node, nodeID, remoteID or a path-string.
+     *                                 Can be node, object, nodeID, remoteID or a path-string.
      * @param boolean $ensureExistence If true, tries to make sure the localtion exists.
      *                                 This only works if a path-string is passed (stating with a "/").
      *
@@ -212,6 +212,11 @@ class psdContentBuilder
             return $location;
         }
 
+        // Object.
+        if ($location instanceof eZContentObject) {
+            return $location->attribute('main_node');
+        }
+
         if (empty($location)) {
             $location = '/';
         }
@@ -219,7 +224,7 @@ class psdContentBuilder
         if (is_numeric($location)) {
 
             // Node-ID.
-            return eZContentObjectTreeNode::fetch(intval($location));
+            return eZContentObjectTreeNode::fetch((int) $location);
 
         } else if (is_string($location) && substr($location, 0, 1) === '/') {
 
