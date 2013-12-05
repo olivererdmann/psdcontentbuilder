@@ -1,6 +1,6 @@
 <?php
 /**
- * Builds the psdAirdate-data-type on an existing node.
+ * Builds the eZObjectRelationList-data-type on an existing node.
  *
  * @author Oliver Erdmann, <o.erdmann@finaldream.de>
  * @since 03.12.2013
@@ -57,6 +57,16 @@ class eZObjectRelationListTypeBuilder extends psdAbstractDatatypeBuilder
     }
 
 
+    /**
+     * Builds an eZObjectRelationList-attribute.
+     *
+     * @param eZContentObjectAttribute $contentAttribute Current Attribute.
+     * @param array                    $content          List of resolvable Object-location(s).
+     *
+     * @see psdContentBuilder::resolveNode.
+     *
+     * @return void
+     */
     protected function buildObjectRelationList($contentAttribute, $content)
     {
 
@@ -84,6 +94,16 @@ class eZObjectRelationListTypeBuilder extends psdAbstractDatatypeBuilder
     }
 
 
+    /**
+     * Builds an eZObjectRelation-attribute.
+     *
+     * @param eZContentObjectAttribute $contentAttribute Current Attribute.
+     * @param mixed                    $content          Array or single resolvable Object-location.
+     *
+     * @see  psdContentBuilder::resolveNode.
+     *
+     * @return void
+     */
     protected function buildObjectRelation($contentAttribute, $content)
     {
 
@@ -108,33 +128,23 @@ class eZObjectRelationListTypeBuilder extends psdAbstractDatatypeBuilder
     }
 
 
+    /**
+     * Returns a node-id for a specified location.
+     *
+     * @param mixed $item Location representation.
+     *
+     * @return int
+     */
     protected function validateObjectRelationItem($item)
     {
-        $object   = null;
-        $objectId = 0;
 
-        // Get Content-Object-ID either from an int or a fetch-result.
-        if ($item instanceof eZContentObject) {
-            $object = $item;
-        } else if ($item instanceof eZContentObjectTreeNode) {
-            $object = $item->object();
-        } else if (is_numeric($item)) {
-            $objectId = $item;
-        } else if (is_array($item) && array_key_exists('contentobject_id', $item)) {
-            $objectId = $item['contentobject_id'];
+        $node = psdContentBuilder::resolveNode($item);
+
+        if (!($node instanceof eZContentObjectTreeNode)) {
+            return 0;
         }
 
-        if ($object instanceof eZContentObject) {
-            $objectId = $object->ID;
-        } else {
-            $object = eZContentObject::fetch((int) $objectId);
-        }
-
-        if ($object instanceof eZContentObject) {
-            return $objectId;
-        }
-
-        return 0;
+        return $node->attribute('contentobject_id');
 
     }
 
