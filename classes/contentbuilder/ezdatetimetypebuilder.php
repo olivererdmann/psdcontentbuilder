@@ -1,6 +1,6 @@
 <?php
 /**
- * Builds the psdAirdate-data-type on an existing node.
+ * Builds the eZDateTime-data-type on an existing node.
  *
  * @author Oliver Erdmann, <o.erdmann@finaldream.de>
  * @since 03.12.2013
