@@ -82,8 +82,6 @@ class eZTagsTypeBuilder extends psdAbstractDatatypeBuilder
 
         }
 
-
-
     }
 
 
@@ -97,10 +95,11 @@ class eZTagsTypeBuilder extends psdAbstractDatatypeBuilder
     protected function validateTag($pathString)
     {
 
-        $parts    = explode('/', trim($pathString, '/'));
-        $path     = '';
-        $parentId = 0;
-        $tag      = null;
+        $parts     = explode('/', trim($pathString, '/'));
+        $path      = '';
+        $parentTag = null;
+        $parentId  = 0;
+        $tag       = null;
 
         foreach ($parts as $index => $part) {
             $path .= '/'.$part;
@@ -124,11 +123,15 @@ class eZTagsTypeBuilder extends psdAbstractDatatypeBuilder
                 );
 
                 $tag->store();
+                $tag->updatePathString($parentTag);
+
+                $tag->store();
             } else {
                 $tag = $fetched[0];
             }
 
-            $parentId = $tag->attribute('id');
+            $parentTag = $tag;
+            $parentId  = $tag->attribute('id');
         }//end foreach
 
         return $tag;
