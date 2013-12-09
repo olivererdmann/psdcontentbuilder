@@ -164,7 +164,7 @@ class psdContentBuilder
 
         $this->validate();
 
-        // @todo: in some cases the location may needs to be created first (path).
+        $cli      = eZCLI::instance();
         $children = $this->structure['content'];
 
         if (array_key_exists('remoteIdPrefix', $this->structure)) {
@@ -173,16 +173,24 @@ class psdContentBuilder
 
         foreach ($children as $child) {
 
-            $nodeBuilder          = new psdNodeBuilder($this);
-            $nodeBuilder->verbose = $this->verbose;
+            try {
+                $nodeBuilder          = new psdNodeBuilder($this);
+                $nodeBuilder->verbose = $this->verbose;
 
-            $nodeBuilder->setRemoteIdPrefix($this->remoteIdPrefix);
-            $nodeBuilder->apply($child);
+                $nodeBuilder->setRemoteIdPrefix($this->remoteIdPrefix);
+                $nodeBuilder->apply($child);
+            } catch (Exception $e) {
+                $cli->output($e->getMessage(), true);
+
+                if ($this->verbose) {
+                    $cli->output($e->getTraceAsString(), true);
+                }
+            }
+
 
         }
 
         // Output undo-information.
-        $cli = eZCLI::instance();
         if (empty($this->undoNodes)) {
             $cli->output('No nodes created, nothing to undo.', true);
         } else {
