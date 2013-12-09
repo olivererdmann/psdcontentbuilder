@@ -43,7 +43,7 @@ class ezDateTimeTypeBuilder extends psdAbstractDatatypeBuilder
         $contentAttribute->store();
 
 
-        $dataType = new psdAirDateType();
+        $dataType = new eZDateTimeType();
         $dataType->initializeObjectAttribute($contentAttribute, false, null);
 
         $this->buildDateTimeType($contentAttribute, $content);
