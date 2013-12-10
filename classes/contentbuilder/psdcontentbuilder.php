@@ -195,7 +195,7 @@ class psdContentBuilder
             $cli->output('No nodes created, nothing to undo.', true);
         } else {
             $cli->output('Undo String:', true);
-            $cli->output(implode(',', $this->undoNodes), true);
+            $cli->output(implode(',', array_reverse($this->undoNodes)), true);
         }
 
     }
