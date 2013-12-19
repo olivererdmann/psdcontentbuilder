@@ -300,7 +300,7 @@ class psdContentBuilder
      *                                 Returns false if the path is not a string.
      * @throws Exception If the creation of missing nodes fails.
      */
-    public function ensurePathExists($path, $className = 'folder')
+    public static function ensurePathExists($path, $className = 'folder')
     {
 
         if (!is_string($path)) {

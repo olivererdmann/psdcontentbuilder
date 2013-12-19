@@ -158,8 +158,7 @@ class psdContentBuilderCLI
         if (array_key_exists('site-access', $this->arguments)) {
             $this->scriptSettings['site-access'] = $this->arguments['site-access'];
         } else {
-            $ini                                 = eZINI::instance('site.ini');
-            $this->scriptSettings['site-access'] = $ini->variable('SiteSettings', 'DefaultAccess');
+            throw new Exception('Argument --site-access is required!');
         }
 
         $this->script = eZScript::instance($this->scriptSettings);
