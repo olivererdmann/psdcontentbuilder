@@ -34,7 +34,7 @@ class psdRealPathFunctionHandler extends psdAbstractYamlFunctionHandler
 
         if (!$realpath) {
             throw new Exception(
-                'The file with given path "'.$parameters['path'].'" not exist .'
+                'The file with given path "'.$parameters['path'].'" does not exist.'
             );
         }
 
