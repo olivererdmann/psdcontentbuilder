@@ -181,6 +181,8 @@ class psdNodeBuilder
 
         foreach ($structure as $key => $value) {
 
+            $this->contentBuilder->execPath->add($key);
+
             // Process Yaml functions as they are encountered.
             $value = $this->contentBuilder->postProcessNode($value);
 
@@ -221,6 +223,8 @@ class psdNodeBuilder
                     }
 
             }//end switch
+
+            $this->contentBuilder->execPath->pop();
 
         }//end foreach
 
@@ -271,7 +275,14 @@ class psdNodeBuilder
 
         // Build custom attributes.
         foreach ($customAttributes as $attribute => $value) {
+
+            // Store and restore exec-path, because the data-type builder may modify the data on its own.
+            $this->contentBuilder->execPath->store();
+            $this->contentBuilder->execPath->add($attribute);
+
             $this->dataTypeBuilders[$value[0]]->apply($object, $attribute, $value[1]);
+
+            $this->contentBuilder->execPath->restore();
         }
 
         // Publish page.
@@ -300,8 +311,12 @@ class psdNodeBuilder
 
         // Continue to recursively create children, if defined.
         if (is_array($children)) {
-            foreach ($children as $child) {
+            foreach ($children as $index => $child) {
+                $this->contentBuilder->execPath->add($index);
+
                 $this->createNode($object->mainNode(), $child);
+
+                $this->contentBuilder->execPath->pop();
             }
         }
 
