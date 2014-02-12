@@ -10,8 +10,6 @@ require_once 'autoload.php';
  * @TODO: Optimize Structure
  * @TODO: Block-Items, add timings.
  * @TODO: Add proper verbose cli-output and error-reporting.
- * @TODO: Check ObjectRelation/List.
- * @TODO: check if raw input on data_text / data_int works. Allow raw XML with the toXML-function.
  *
  * @author Oliver Erdmann, <o.erdmann@finaldream.de>
  * @license GNU General Public License v2
@@ -94,7 +92,7 @@ class psdContentBuilderCLI
                 array(
                     'apply:',
                     'remove:',
-                    'site-access:',
+                    'siteaccess:',
                     'verbose::',
                 )
             );
@@ -104,6 +102,10 @@ class psdContentBuilderCLI
         }
 
         $this->cli = eZCLI::instance();
+
+        if (is_array($this->arguments)) {
+            $this->verbose = array_key_exists('verbose', $this->arguments);
+        }
 
         try {
             $this->initScript();
@@ -125,7 +127,6 @@ class psdContentBuilderCLI
 
         if (is_array($this->arguments) && count($this->arguments) > 0) {
 
-            $this->verbose             = array_key_exists('verbose', $this->arguments);
             $GLOBALS['eZDebugEnabled'] = $this->verbose;
 
             foreach ($handlers as $handler) {
@@ -144,7 +145,7 @@ class psdContentBuilderCLI
 
     /**
      * Init eZScript for functions the need db-access, only initializes once.
-     * This function needs the --site-access argument set, if left blank, the DefaultAccess from site.ini is used.
+     * This function needs the --siteaccess argument set, if left blank, the DefaultAccess from site.ini is used.
      *
      * @return void
      */
@@ -155,17 +156,17 @@ class psdContentBuilderCLI
             return;
         }
 
-        if (array_key_exists('site-access', $this->arguments)) {
-            $this->scriptSettings['site-access'] = $this->arguments['site-access'];
+        if (array_key_exists('siteaccess', $this->arguments)) {
+            $this->scriptSettings['site-access'] = $this->arguments['siteaccess'];
         } else {
-            throw new Exception('Argument --site-access is required!');
+            throw new Exception('Argument --siteaccess is required!');
         }
 
         $this->script = eZScript::instance($this->scriptSettings);
         $this->script->startup();
         $this->script->initialize();
 
-        $this->logLine('Initializing. Using site-access '.$this->scriptSettings['site-access'], __METHOD__);
+        $this->logLine('Initializing. Using siteaccess '.$this->scriptSettings['site-access'], __METHOD__);
 
     }
 
@@ -269,12 +270,12 @@ class psdContentBuilderCLI
 
             ARGUMENTS
             --apply        PATH      Applies the structure defined in the file to the content-tree.
-                                     Requires the --site-access option set.
+                                     Requires the --siteaccess option set.
             --remove       NODE-LIST List of NODE-LOCATIONs separated by commas.
             --help                   This text.
                                      defined in the package.xml-structure. Will overwrite existing classes, unless
                                      the option --ignore-version is specified.
-            --site-access  STRING    Site-Access that will be needed to perform database-actions. If left blank, the
+            --siteaccess  STRING    siteaccess that will be needed to perform database-actions. If left blank, the
                                      DefaultAccess is taken from site.ini.
             --verbose                Keeps the script telling about what it\'s doing.
 
@@ -289,18 +290,18 @@ class psdContentBuilderCLI
 
               FYI: Run all commands relative to the root of your eZ Publish installation!
 
-              Apply a structure to the default site-access:
+              Apply a structure to the default siteaccess:
               $ php psdcontentbuildercli.php --apply="path/to/structure.yaml"
 
-              Apply a structure to a defined site-access:
-              $ php psdcontentbuildercli.php --apply="path/to/structure.yaml" --site-access=NAME-OF-SITEACCESS
+              Apply a structure to a defined siteaccess:
+              $ php psdcontentbuildercli.php --apply="path/to/structure.yaml" --siteaccess=NAME-OF-SITEACCESS
 
 
               Undo a recent application:
               > Undo String:
               > 123456,456778
 
-              $ php psdcontentbuildercli.php --remove=123456,456778 --site-access=NAME-OF-SITEACCESS
+              $ php psdcontentbuildercli.php --remove=123456,456778 --siteaccess=NAME-OF-SITEACCESS
 
             ';
 
