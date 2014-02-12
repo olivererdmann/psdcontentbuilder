@@ -251,17 +251,15 @@ class psdNodeBuilder
 
         }
 
-        if ($this->verbose) {
-            $url = '/'.$locationNode->attribute('url');
-            $this->cli->output(
-                sprintf(
-                    'Create node "%s" below "%s" with remoteId "%s" ',
-                    $name,
-                    $url,
-                    $options['remote_id']
-                )
-            );
-        }
+        $url = '/'.$locationNode->attribute('url');
+        $this->cli->output(
+            sprintf(
+                'Create node "%s" below "%s" with remoteId "%s" ',
+                $name,
+                $url,
+                $options['remote_id']
+            )
+        );
 
         $content = \SQLIContent::create($contentOptions);
 
@@ -269,7 +267,11 @@ class psdNodeBuilder
             $content->fields->$property = $value;
         }
 
-        $content->addLocation(\SQLILocation::fromNodeID($locationNode->attribute('node_id')));
+        // Only add new locations in order to catch warnings on existing ones.
+        $location = \SQLILocation::fromNodeID($locationNode->attribute('node_id'));
+        if (!self::contentHasLocation($location, $content)) {
+            $content->addLocation($location, $content);
+        }
 
         $object = $content->getRawContentObject();
 
@@ -319,6 +321,40 @@ class psdNodeBuilder
                 $this->contentBuilder->execPath->pop();
             }
         }
+
+    }
+
+
+    /**
+     * Checks if the provided content already has a specified location.
+     * Based on @see \SQLIContentPublisher::addLocationToContent
+     *
+     * @param SQLILocation $location Location to test.
+     * @param SQLIContent  $content  Content to test.
+     *
+     * @return bool Whether the content has the location. Unpublished content will also return FALSE.
+     */
+    public static function contentHasLocation(SQLILocation $location, SQLIContent $content)
+    {
+
+        $nodeID = $content->attribute('main_node_id');
+
+        // No main node ID, object has not been published at least once.
+        if (!$nodeID) {
+            return false;
+        }
+
+        $locationNodeID = $location->getNodeID();
+
+        // Check if content has already an assigned node in provided location.
+        $assignedNodes = $content->assignedNodes(false);
+        for ($i = 0, $iMax = count($assignedNodes); $i < $iMax; ++$i) {
+            if ($locationNodeID == $assignedNodes[$i]['parent_node_id']) {
+                return true;
+            }
+        }
+
+        return false;
 
     }
 
