@@ -21,7 +21,7 @@ enable the creation of custom datatype-builders with great complexity (as long a
   * `ezpublish/fetch/MODULE/FUNCTION` access any eZ Publish fetch (defined by module/function) and re-map the attributes of results as needed. Return arrays or single objects.
   * `ezpublish/locate/node|object` locate existing or recently created nodes. Location can be done by nodeID (integer), remoteID (string) or a path (starts with a slash).
   * Functions can also be extended or overridden in `psdcontentbuilder.ini`.
-* After applying a yaml-file to an eZ Publish site-access, an undo-string is out put. This can be used to automatically remove all created nodes, undoing the action.
+* After applying a yaml-file to an eZ Publish siteaccess, an undo-string is out put. This can be used to automatically remove all created nodes, undoing the action.
 
 # Command-Line Interface:
 
@@ -46,12 +46,12 @@ Commandline-Interface for building content from YAML-files.
 
 ARGUMENTS
 --apply        PATH      Applies the structure defined in the file to the content-tree.
-                         Requires the --site-access option set.
+                         Requires the --siteaccess option set.
 --remove       NODE-LIST List of NODE-LOCATIONs separated by commas.
 --help                   This text.
                          defined in the package.xml-structure. Will overwrite existing classes, unless
                          the option --ignore-version is specified.
---site-access  STRING    Site-Access that will be needed to perform database-actions. If left blank, the
+--siteaccess  STRING    siteaccess that will be needed to perform database-actions. If left blank, the
                          DefaultAccess is taken from site.ini.
 --verbose                Keeps the script telling about what it\'s doing.
 
@@ -66,18 +66,18 @@ EXAMPLES:
 
   FYI: Run all commands relative to the root of your eZ Publish installation!
 
-  Apply a structure to the default site-access:
+  Apply a structure to the default siteaccess:
   $ php psdcontentbuildercli.php --apply="path/to/structure.yaml"
 
-  Apply a structure to a defined site-access:
-  $ php psdcontentbuildercli.php --apply="path/to/structure.yaml" --site-access=NAME-OF-SITEACCESS
+  Apply a structure to a defined siteaccess:
+  $ php psdcontentbuildercli.php --apply="path/to/structure.yaml" --siteaccess=NAME-OF-SITEACCESS
 
 
   Undo a recent application:
   > Undo String:
   > 123456,456778
 
-  $ php psdcontentbuildercli.php --remove=123456,456778 --site-access=NAME-OF-SITEACCESS
+  $ php psdcontentbuildercli.php --remove=123456,456778 --siteaccess=NAME-OF-SITEACCESS
 ```
 
 # YAML-Structure:

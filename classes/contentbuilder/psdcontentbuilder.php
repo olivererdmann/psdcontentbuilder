@@ -11,6 +11,8 @@
 require_once 'autoload.php';
 
 use Symfony\Component\Yaml\Yaml;
+use extension\psdcontentbuilder\classes\psdPathLevels;
+
 class psdContentBuilder
 {
 
@@ -70,20 +72,27 @@ class psdContentBuilder
      */
     public $logLineCallback;
 
+    /**
+     * Holds the current path for debugging purposes.
+     *
+     * @var psdPathLevels
+     */
+    public $execPath;
+
 
     /**
      * Creates a new instance and initializes it with a filename.
      * @todo Constructors for loading from string and array-structure.
      *
      * @param string $fileName File to parse for a structure.
-     *
-     * @return void
      */
     public function __construct($fileName)
     {
 
         $this->fileName       = $fileName;
         $this->remoteIdPrefix = basename($fileName);
+
+        $this->execPath = new psdPathLevels();
 
         $this->initialize();
 
@@ -165,22 +174,33 @@ class psdContentBuilder
         $this->validate();
 
         $cli      = eZCLI::instance();
+        $this->execPath->add('content');
+
         $children = $this->structure['content'];
+
 
         if (array_key_exists('remoteIdPrefix', $this->structure)) {
             $this->remoteIdPrefix = $this->structure['remoteIdPrefix'];
         }
 
-        foreach ($children as $child) {
+        foreach ($children as $index => $child) {
 
             try {
+                $this->execPath->add($index);
+
                 $nodeBuilder          = new psdNodeBuilder($this);
                 $nodeBuilder->verbose = $this->verbose;
 
                 $nodeBuilder->setRemoteIdPrefix($this->remoteIdPrefix);
                 $nodeBuilder->apply($child);
+
+                $this->execPath->pop();
             } catch (Exception $e) {
-                $cli->output($e->getMessage(), true);
+                $cli->output('', true);
+                $cli->error($e->getMessage(), true);
+                $cli->error('Current execution path in '.$this->fileName, true);
+                $cli->error('> '.(string) $this->execPath, true);
+                $cli->output('', true);
 
                 if ($this->verbose) {
                     $cli->output($e->getTraceAsString(), true);
@@ -430,6 +450,9 @@ class psdContentBuilder
         eZDebug::writeNotice('*'.__CLASS__.': '.$str, $method);
 
     }
+
+
+
 
 
 }
