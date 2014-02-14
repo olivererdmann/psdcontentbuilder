@@ -287,8 +287,10 @@ class psdNodeBuilder
             $this->contentBuilder->execPath->restore();
         }
 
-        // Publish page.
-        $publisher = \SQLIContentPublisher::getInstance();
+        // Publish page, force publishing built nodes by disabling the modification check.
+        $publishOptions = new SQLIContentPublishOptions(array('modification_check' => false));
+        $publisher      = \SQLIContentPublisher::getInstance();
+        $publisher->setOptions($publishOptions);
         $publisher->publish($content);
 
         if (!($object instanceof eZContentObject)) {
