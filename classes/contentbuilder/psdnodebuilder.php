@@ -55,6 +55,13 @@ class psdNodeBuilder
      */
     public $verbose = false;
 
+    /**
+     * eZFind search-engine.
+     *
+     * @var eZSolr
+     */
+    protected $searchEngine;
+
 
     /**
      * Constructs the object and takes a structure.
@@ -125,9 +132,12 @@ class psdNodeBuilder
             throw new psdContentBuilderValidationException('Invalid structure, must be an array.');
         }
 
+        $this->searchEngine = new eZSolr();
         $this->structure = $structure;
 
         $this->createNode('', $structure);
+
+        $this->searchEngine->commit();
 
     }
 
@@ -207,7 +217,7 @@ class psdNodeBuilder
                     // Sort the options into different arrays depending on the class-definition.
                     if ($context == self::FIELD_CONTEXT_CLASS) {
                         $options[$key] = $value;
-                    } else if ($context == self::FIELD_CONTEXT_DATAMAP) {
+                    } elseif ($context == self::FIELD_CONTEXT_DATAMAP) {
 
                         // Check if there's custom builder registered for this data-type.
                         $attr = $class->fetchAttributeByIdentifier($key);
@@ -293,6 +303,9 @@ class psdNodeBuilder
         $publisher->setOptions($publishOptions);
         $publisher->publish($content);
 
+        // Reload object in order to reflect changes made during publishing.
+        $object = eZContentObject::fetch($object->ID);
+
         if (!($object instanceof eZContentObject)) {
             throw new psdContentBuilderValidationException('Failed to create new node.');
         }
@@ -306,9 +319,7 @@ class psdNodeBuilder
             true
         );
 
-        $searchEngine = new eZSolr();
-        $searchEngine->addObject($object, true);
-        $searchEngine->commit();
+        $this->searchEngine->addObject($object);
 
         // Remember created node.
         $this->contentBuilder->addUndoNode($object->mainNodeID());
