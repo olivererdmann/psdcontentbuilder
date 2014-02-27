@@ -108,19 +108,19 @@ class psdContentBuilderCLI
         }
 
         try {
-            $this->initScript();
+            if ($this->initScript()) {
 
-            // Test if database is empty.
-            $db = eZDB::instance();
-            eZDB::setErrorHandling(eZDB::ERROR_HANDLING_EXCEPTIONS);
-            $db->arrayQuery('SELECT * FROM ezcontentclass');
-        }
-        catch (eZDBNoConnectionException $e) {
+                // Test if database is empty.
+                $db = eZDB::instance();
+                eZDB::setErrorHandling(eZDB::ERROR_HANDLING_EXCEPTIONS);
+                $db->arrayQuery('SELECT * FROM ezcontentclass');
+
+            }
+        } catch (eZDBNoConnectionException $e) {
             $this->verbose = true;
             $this->logLine($e->originalMessage, __METHOD__);
             $this->script->shutdown(1, 'No Database connection possible. Aborting.');
-        }
-        catch (eZDBException $e) {
+        } catch (eZDBException $e) {
             $this->verbose = true;
             $this->script->shutdown(2, 'Database is empty, please import an initial dump!');
         }
@@ -147,17 +147,20 @@ class psdContentBuilderCLI
      * Init eZScript for functions the need db-access, only initializes once.
      * This function needs the --siteaccess argument set, if left blank, the DefaultAccess from site.ini is used.
      *
-     * @return void
+     * @throws Exception If
+     * @return boolean
      */
     public function initScript()
     {
 
         if ($this->script) {
-            return;
+            return true;
         }
 
         if (array_key_exists('siteaccess', $this->arguments)) {
             $this->scriptSettings['site-access'] = $this->arguments['siteaccess'];
+        } elseif (empty($this->arguments)) {
+            return false;
         } else {
             throw new Exception('Argument --siteaccess is required!');
         }
@@ -167,6 +170,8 @@ class psdContentBuilderCLI
         $this->script->initialize();
 
         $this->logLine('Initializing. Using siteaccess '.$this->scriptSettings['site-access'], __METHOD__);
+
+        return true;
 
     }
 
@@ -186,7 +191,8 @@ class psdContentBuilderCLI
     }
 
 
-    public function doApply() {
+    public function doApply()
+    {
 
         if (is_array($this->arguments) && array_key_exists('apply', $this->arguments)) {
             $pattern = $this->arguments['apply'];
@@ -201,10 +207,12 @@ class psdContentBuilderCLI
         foreach ($files as $file) {
             $this->logLine('Applying structure to content-tree: '.$file, __METHOD__);
 
-            $builder = new psdContentBuilder($file);
+            $builder = new psdContentBuilder();
 
             $builder->verbose = $this->verbose;
             $builder->logLineCallback = array($this, 'logLine');
+
+            $builder->loadFromFile($file);
             $builder->apply();
 
         }
