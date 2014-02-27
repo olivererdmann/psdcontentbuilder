@@ -135,7 +135,16 @@ class psdNodeBuilder
         $this->searchEngine = new eZSolr();
         $this->structure = $structure;
 
-        $this->createNode('', $structure);
+        foreach ($structure as $index => $child) {
+
+            $this->contentBuilder->execPath->add($index);
+
+            $value = $this->contentBuilder->postProcessNode($child);
+
+            $this->createNode('', $value);
+            $this->contentBuilder->execPath->pop();
+
+        }
 
         $this->searchEngine->commit();
 
@@ -326,13 +335,20 @@ class psdNodeBuilder
 
         // Continue to recursively create children, if defined.
         if (is_array($children)) {
+            $this->contentBuilder->execPath->add('children');
+
             foreach ($children as $index => $child) {
                 $this->contentBuilder->execPath->add($index);
+
+                // Process Yaml functions in arrays.
+                $child = $this->contentBuilder->postProcessNode($child);
 
                 $this->createNode($object->mainNode(), $child);
 
                 $this->contentBuilder->execPath->pop();
             }
+
+            $this->contentBuilder->execPath->pop();
         }
 
     }
