@@ -141,6 +141,37 @@ Creates a strukture like:
     * Child 2 (article)
     * Child 3 (article)
 
+## Include-function (built-in)
+
+Allows to split large structures and reuse code by including other YAML-files. The inclusion is raw, which means that
+the included content is parsed by the YAML-Parser, but not validated beyond that point. In contrast to the initial
+structure, which requires a top-level key "content", included files are appended as-is to the function's parent.
+The function requires a parameter `file` which either points to an absolute path or a path relative to the initial
+structure-file, specified during the CLI-call.
+The return-value is the un-serialized content of that file, which is appended to the parent-node.
+
+Assuming a file called `my-frontpage.yaml` with this content:
+```
+name:  MyFrontpage
+class: frontpage
+body:  Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+```
+
+The include-call might look like this:
+```
+children:
+  - function: include
+    file:     path/to/my-frontpage.yaml
+```
+
+The result will be:
+```
+children:
+  - name:  MyFrontpage
+    class: frontpage
+    body:  Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+```
+
 ## Locate-function (built-in)
 
 This locates the root-node by providing the path-string "/" to the `ezpublish/locate/node`-function.
