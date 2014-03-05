@@ -10,7 +10,7 @@
 // Get eZ!
 require_once 'autoload.php';
 
-use Symfony\Component\Yaml\Yaml;
+use Symfony\Component\Yaml\Parser;
 use extension\psdcontentbuilder\classes\psdPathLevels;
 
 class psdContentBuilder
@@ -28,12 +28,12 @@ class psdContentBuilder
      *
      * @var array|null
      */
-    public $structure = null;
+    protected $structure = null;
 
     /**
      * Current yaml-parser.
      *
-     * @var Yaml|null
+     * @var Parser|null
      */
     protected $yaml = null;
 
@@ -84,23 +84,22 @@ class psdContentBuilder
      * Creates a new instance and initializes it with a filename.
      * @todo Constructors for loading from string and array-structure.
      *
-     * @param string $fileName File to parse for a structure.
      */
-    public function __construct($fileName)
+    public function __construct()
     {
-
-        $this->fileName       = $fileName;
-        $this->remoteIdPrefix = basename($fileName);
 
         $this->execPath = new psdPathLevels();
 
-        $this->initialize();
+        // Initialize the YAML-Postprocessing.
+        $this->loadPostProcessor();
 
     }
 
 
     /**
      * Loads and parses the specified YAML-file. The parsed structure is available through $this->structure.
+     *
+     * @param string $fileName Filename to load. Fails if not exists or not a valid YAML-format.
      *
      * @return void
      *
@@ -109,20 +108,23 @@ class psdContentBuilder
      *
      * @return void
      */
-    protected function initialize()
+    public function loadFromFile($fileName)
     {
 
         $this->structure = null;
 
-        if (!file_exists($this->fileName)) {
-            throw new \Symfony\Component\HttpFoundation\File\Exception\FileNotFoundException($this->fileName);
+        if (!file_exists($fileName) ||  (false === is_readable($fileName))) {
+            throw new \Symfony\Component\Yaml\Exception\ParseException(
+                sprintf('Unable to parse "%s" as the file is not readable.', $fileName)
+            );
         }
+        $this->fileName       = $fileName;
+        $this->remoteIdPrefix = basename($fileName);
 
-        $this->yaml      = new Yaml();
-        $this->structure = $this->yaml->parse($this->fileName);
+        $content = file_get_contents($this->fileName);
 
-        // Initialize the YAML-Postprocessing.
-        $this->loadPostProcessor();
+        $this->yaml      = new Parser();
+        $this->structure = $this->yaml->parse($content);
 
     }
 
@@ -145,6 +147,16 @@ class psdContentBuilder
             throw new psdContentBuilderValidationException('Structure is missing a "content"-key.');
         }
 
+        // Resolve functions in all top-level nodes except of "content". This allows eg. includes for assets.
+        foreach ($this->structure as $key => $value) {
+
+            if ($key == 'content') {
+                continue;
+            }
+
+            $this->structure[$key] = $this->postProcess($value);
+        }
+
     }
 
 
@@ -162,14 +174,46 @@ class psdContentBuilder
 
 
     /**
+     * Returns the filename of the currently loaded file.
+     *
+     * @return string Current filename.
+     */
+    public function getFileName()
+    {
+
+        return $this->fileName;
+
+    }
+
+
+    /**
+     * Returns the current parser-instance.
+     *
+     * @return null|Parser
+     */
+    public function getParser()
+    {
+
+        return $this->yaml;
+
+    }
+
+
+    /**
      * Applies the loaded structure to the content-tree.
+     *
+     * @param array $structure Optional structure to apply. If empty, expects a previously loaded structure.
      *
      * @return void.
      *
      * @throws psdContentBuilderValidationException If validation fails.
      */
-    public function apply()
+    public function apply(array $structure = array())
     {
+
+        if (!empty($structure)) {
+            $this->structure = $structure;
+        }
 
         $this->validate();
 
@@ -183,31 +227,24 @@ class psdContentBuilder
             $this->remoteIdPrefix = $this->structure['remoteIdPrefix'];
         }
 
-        foreach ($children as $index => $child) {
+        try {
 
-            try {
-                $this->execPath->add($index);
+            $nodeBuilder          = new psdNodeBuilder($this);
+            $nodeBuilder->verbose = $this->verbose;
 
-                $nodeBuilder          = new psdNodeBuilder($this);
-                $nodeBuilder->verbose = $this->verbose;
+            $nodeBuilder->setRemoteIdPrefix($this->remoteIdPrefix);
+            $nodeBuilder->apply($children);
 
-                $nodeBuilder->setRemoteIdPrefix($this->remoteIdPrefix);
-                $nodeBuilder->apply($child);
+        } catch (Exception $e) {
+            $cli->output('', true);
+            $cli->error($e->getMessage(), true);
+            $cli->error('Current execution path in '.$this->fileName, true);
+            $cli->error('> '.(string) $this->execPath, true);
+            $cli->output('', true);
 
-                $this->execPath->pop();
-            } catch (Exception $e) {
-                $cli->output('', true);
-                $cli->error($e->getMessage(), true);
-                $cli->error('Current execution path in '.$this->fileName, true);
-                $cli->error('> '.(string) $this->execPath, true);
-                $cli->output('', true);
-
-                if ($this->verbose) {
-                    $cli->output($e->getTraceAsString(), true);
-                }
+            if ($this->verbose) {
+                $cli->output($e->getTraceAsString(), true);
             }
-
-
         }
 
         // Output undo-information.
@@ -254,7 +291,7 @@ class psdContentBuilder
             // Node-ID.
             return eZContentObjectTreeNode::fetch((int) $location);
 
-        } else if (is_string($location) && substr($location, 0, 1) === '/') {
+        } elseif (is_string($location) && substr($location, 0, 1) === '/') {
 
             $node = null;
 
@@ -275,7 +312,7 @@ class psdContentBuilder
 
             return $node;
 
-        } else if (is_string($location)) {
+        } elseif (is_string($location)) {
 
             // RemoteID.
             $node = eZContentObjectTreeNode::fetchByRemoteID($location);
@@ -408,23 +445,29 @@ class psdContentBuilder
     /**
      * Loads the function-handlers from psdcontentbuilder.ini and processes the structure.
      *
+     * @param array $handlers Key=function-call, Value=functionHandler.
+     *                        If empty handlers are loaded from psdcontentbuilder.ini::Handlers/YamlFunctions[]
+     *
      * @return void.
      */
-    protected function loadPostProcessor()
+    public function loadPostProcessor(array $handlers = array())
     {
-
-        // Load the function-handlers from the INI.
-        $ini = eZINI::instance('psdcontentbuilder.ini');
 
         $this->postProcessor = new psdYamlProcessor();
 
-        // No handlers, nothing to do.
-        if (!$ini->hasVariable('Handlers', 'YamlFunctions')) {
-            return;
+        // Load the function-handlers from the INI.
+        if (empty($handlers)) {
+            $ini = eZINI::instance('psdcontentbuilder.ini');
+
+            // No handlers, nothing to do.
+            if (!$ini->hasVariable('Handlers', 'YamlFunctions')) {
+                return;
+            }
+
+            $handlers = $ini->variable('Handlers', 'YamlFunctions');
         }
 
-        $handlers = $ini->variable('Handlers', 'YamlFunctions');
-
+        $this->postProcessor->setBuilder($this);
         $this->postProcessor->addMultipleFunctionHandlers($handlers);
 
     }

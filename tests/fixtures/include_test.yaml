@@ -1,0 +1,13 @@
+--- # Include Test Structure
+
+assets:
+  mergeChildren: &mergeChildren
+    children:
+      - name: Include Child 1
+      - name: Include Child 2
+      - name: Include Child 3
+
+content:
+
+  - function: include
+    file:     include_test/include_file.yaml

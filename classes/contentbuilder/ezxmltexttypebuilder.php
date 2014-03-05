@@ -58,7 +58,16 @@ class eZXMLTextTypeBuilder extends psdAbstractDatatypeBuilder
         $dataType = new eZXMLTextType();
         $dataType->initializeObjectAttribute($contentAttribute, false, null);
 
-        $xml = SQLIContentUtils::getRichContent((string) $content);
+        $htmlParser                      = new psdExtendendXMLInputParser();
+
+        $htmlParser->InputTags['embed'] = array(
+            'nameHandler' => 'tagEmbedHandler'
+        );
+
+        $htmlParser->setParseLineBreaks(true);
+
+        $document = $htmlParser->process($content);
+        $xml      = (string) eZXMLTextType::domString($document);
 
         $contentAttribute->setAttribute('data_text', $xml);
 

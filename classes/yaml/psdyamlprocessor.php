@@ -10,12 +10,25 @@ class psdYamlProcessor
 {
 
     /**
+     * Maximum depth of recursion for processing nodes.
+     *
+     * @var int
+     */
+    protected $maxRecursionDepth = 50;
+
+    /**
      * Keeps all handlers for processing YAML-functions.
      *
      * @var array
      */
     protected $functionHandlers = array();
 
+    /**
+     * Current ContentBuilder instance.
+     *
+     * @var psdContentBuilder
+     */
+    protected $builder;
 
     /**
      * Registers a handler for a YAML-function.
@@ -49,15 +62,33 @@ class psdYamlProcessor
 
 
     /**
+     * Sets the current Builder so that it may be queried by Function-Handlers.
+     *
+     * @param psdContentBuilder $builder
+     */
+    public function setBuilder($builder)
+    {
+
+        $this->builder = $builder;
+
+    }
+
+    /**
      * Walks through the parsed structure and tries to execute function-handlers starting with "!" in their keys.
      * Keys starting with an exclamation mark indicate a function-result, the mark will be removed in return-value.
      *
      * @param mixed $structure The current structural level.
+     * @param int   $depth     The current depth of recursion. Leave alone when calling this function initially.
      *
+     * @throws Exception When the level of recursion reaches the maximum depth.
      * @return array The processed level of structure.
      */
-    public function process($structure)
+    public function process($structure, $depth = 0)
     {
+
+        if ($depth > $this->maxRecursionDepth) {
+            throw new Exception('Too much recursion!');
+        }
 
         // Dead-end.
         if (!is_array($structure)) {
@@ -66,13 +97,13 @@ class psdYamlProcessor
 
         foreach ($structure as $key => $value) {
 
-            // Dead-end, a function call does not require digging deeper.
+            // A function call may result in a deeper structure which should be followed.
             if (is_array($value) && array_key_exists('function', $value)) {
-                $structure[$key] = $this->processNode($value);
-            } else {
-                // Follow the structure down deeper.
-                $structure[$key] = $this->process($value);
+                $value = $this->processNode($value);
             }
+
+            // Follow the structure down deeper.
+            $structure[$key] = $this->process($value, $depth + 1);
 
         }
 
@@ -141,6 +172,8 @@ class psdYamlProcessor
                 )
             );
         }
+
+        $handler->builder = $this->builder;
 
         return $handler->apply($function, $callbackStack);
 

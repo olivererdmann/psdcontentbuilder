@@ -42,6 +42,18 @@ class psdPathLevels {
 
     }
 
+    /**
+     * Adds a new filename as level to the current path; file-names get removed automatically.
+     *
+     * @param string $filename
+     */
+    public function addFile($filename)
+    {
+
+        $this->levels[] = 'file://'.$filename;
+
+    }
+
 
     /**
      * Pops the last level off the path.
@@ -50,8 +62,19 @@ class psdPathLevels {
      */
     public function pop()
     {
+        // If the next level is a file, remove this level as well.
+        if (count($this->levels) > 0) {
 
-        return array_pop($this->levels);
+            if (substr_compare($this->levels[count($this->levels) - 1], 'file://', 0, 7) === 0) {
+                array_pop($this->levels);
+            }
+
+        }
+
+        $result = array_pop($this->levels);
+
+
+        return $result;
 
     }
 
@@ -90,7 +113,7 @@ class psdPathLevels {
     public function __toString()
     {
 
-        return implode('/', $this->levels);
+        return implode(' > ', $this->levels);
 
     }
 
