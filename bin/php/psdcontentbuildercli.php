@@ -127,8 +127,6 @@ class psdContentBuilderCLI
 
         if (is_array($this->arguments) && count($this->arguments) > 0) {
 
-            $GLOBALS['eZDebugEnabled'] = $this->verbose;
-
             foreach ($handlers as $handler) {
                 if (call_user_func($handler) === true) {
                     $this->shutdownScript();

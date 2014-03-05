@@ -147,6 +147,16 @@ class psdContentBuilder
             throw new psdContentBuilderValidationException('Structure is missing a "content"-key.');
         }
 
+        // Resolve functions in all top-level nodes except of "content". This allows eg. includes for assets.
+        foreach ($this->structure as $key => $value) {
+
+            if ($key == 'content') {
+                continue;
+            }
+
+            $this->structure[$key] = $this->postProcess($value);
+        }
+
     }
 
 
