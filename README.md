@@ -227,6 +227,37 @@ Functions are always evaluated, as encountered. This means, unlike native YAML-d
 and content in the beginning. Then, when creating some kind of overview-pages, you can re-fetch those nodes, putting them
 in place where they're needed.
 
+# Magic keys
+
+## children (child-nodes created below)
+
+## parentNode (place the node below this location)
+Location. If value is a path-string and this path or parts of it don't exist, the missing levels are created as folder.
+Remote-ids, node ids need to exist, otherwise an error is thrown.
+
+## postPublish (delayed publishing of content attributes)
+
+Sometimes it's helpful to fill an object's attribute after all children have been created an published. For example, if you need to reference children in an object-relation or a flow-layout.
+In order to do so, you can use the key `postPublish`, available to every content-tree node. The result is, that the object is being published twice: first before creating the children, with all attributes mentioned in the postPublish-array omitted, and finally after all children were created, this time all attrbiutes are published.
+In order to have this working, children must be defined using the `children`-key word. Creating children afterwards eg. by setting the parentNode-key, won't work.
+
+Sample-code:
+```
+postPublish: [related]  # Omit attribute related from initial publish.
+related:                # Define an object-relation by referencing children
+  - child1
+  - child2
+  - child3
+children:               # define child-nodes
+  - remote_id: child1
+  - remote_id: child2
+  - remote_id: child3
+```
+
+This code instructs the content-builder to create the parent node, without setting the `related`-attribute, which we assume to be an object-relation. It then continues to create the children and afterwards publishes the parent-node again, this time, by also setting the `related`-attribute.
+
+At the moment you can not postPublish required fields, as you won't be able to publish the node for the first time.
+
 # Basic Datattypes:
 
 Datatypes are recognized and created based on the current class's definition. Every datatype can have it's own builder registered,
