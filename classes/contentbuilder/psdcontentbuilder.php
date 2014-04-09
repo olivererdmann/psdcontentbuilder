@@ -73,6 +73,20 @@ class psdContentBuilder
     public $logLineCallback;
 
     /**
+     * Defines if test-cases are collected into an array.
+     *
+     * @var bool
+     */
+    public $collectTestCases = false;
+
+    /**
+     * If $collectTestCases is true, this array holds all found test-cases.
+     *
+     * @var array
+     */
+    public $testCases = array();
+
+    /**
      * Holds the current path for debugging purposes.
      *
      * @var psdPathLevels
@@ -495,8 +509,97 @@ class psdContentBuilder
     }
 
 
+    /**
+     * Adds a test-case with the scope of an object to $testCase-collection.
+     *
+     * @param eZContentObject $object Object used to resolve variable-names.
+     * @param array           $case   Array-structure that defines a test-case. Strings can contain PHP-style variables,
+     *                                which are mapped to the attributes of $object.
+     */
+    public function addTestCase($object, $case)
+    {
 
+        if (!$this->collectTestCases) {
+            return;
+        }
+
+        if (!($object instanceof eZContentObject) || !(is_array($case))) {
+            return;
+        }
+
+        $case = $this->resolveVariablesInStrings($object, $case);
+
+        $node              = $object->mainNode();
+        $case['url_path']  = '/'.$node->attribute('url_alias');
+        $this->testCases[] = $case;
+
+    }
+
+
+    /**
+     * Recursively iterates through an array and tries to resolve PHP-Style variables based on the provided object.
+     *
+     * @param eZContentObject $refObject Object used to resolve variables.
+     * @param array           $structure Array to iterate.
+     * @return array                     Array with resolved strings.
+     */
+    protected function resolveVariablesInStrings($refObject, $structure)
+    {
+
+        foreach ($structure as $key => $value) {
+
+            if (is_array($value)) {
+
+                $structure[$key] = $this->resolveVariablesInStrings($refObject, $value);
+
+
+            } elseif (is_string($value)) {
+                $structure[$key] = preg_replace_callback(
+                    '/\$\w+/',
+                    function ($matches) use ($refObject) {
+                        return $this->getAttributeValueOfObject($refObject, $matches[0]);
+                    },
+                    $value
+                );
+            }
+
+        }
+
+        return $structure;
+
+    }
+
+
+    /**
+     * Called by resolveVariablesInStrings to return the resolved value for a variable-name.
+     *
+     * @param eZContentObject $object        Object used to resolve variables.
+     * @param string          $attributeName Any object-attribute or data-map entry existing in $object.
+     * @return string                        Value of the found attribute or an empty string.
+     */
+    protected function getAttributeValueOfObject(eZContentObject $object, $attributeName)
+    {
+
+        $attr = str_replace('$', '', $attributeName);
+        $result = '';
+
+        try {
+
+            $dataMap = $object->dataMap();
+
+            if (array_key_exists($attr, $dataMap)) {
+                $result = $dataMap[$attr]->toString();
+            } else {
+                $result = $object->attribute($attr);
+            }
+
+        } catch (Exception $e) {
+            // no-op.
+        }
+
+        return $result;
+
+    }
 
 
 }
-

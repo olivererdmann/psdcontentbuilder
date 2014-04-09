@@ -56,6 +56,13 @@ class psdContentBuilderCLI
      */
     protected $verbose = false;
 
+    /**
+     * Filename for output of test-cases.
+     *
+     * @var string
+     */
+    protected $testOutput = '';
+
 
     /**
      * Constructor.
@@ -93,6 +100,7 @@ class psdContentBuilderCLI
                     'apply:',
                     'remove:',
                     'siteaccess:',
+                    'test-output:',
                     'verbose::',
                 )
             );
@@ -192,6 +200,10 @@ class psdContentBuilderCLI
     public function doApply()
     {
 
+        if (array_key_exists('test-output', $this->arguments)) {
+            $this->testOutput = $this->arguments['test-output'];
+        }
+
         if (is_array($this->arguments) && array_key_exists('apply', $this->arguments)) {
             $pattern = $this->arguments['apply'];
         }
@@ -200,19 +212,33 @@ class psdContentBuilderCLI
             return false;
         }
 
-        $files = glob($pattern);
+        $files     = glob($pattern);
+        $testCases = array();
 
         foreach ($files as $file) {
             $this->logLine('Applying structure to content-tree: '.$file, __METHOD__);
 
             $builder = new psdContentBuilder();
 
+            $builder->collectTestCases = !empty($this->testOutput);
             $builder->verbose = $this->verbose;
             $builder->logLineCallback = array($this, 'logLine');
 
             $builder->loadFromFile($file);
             $builder->apply();
 
+            if ($builder->collectTestCases) {
+                $testCases = array_merge($testCases, $builder->testCases);
+            }
+
+        }
+
+        // @TODO: Implement option for customized output (eg. casper.js via plug-in).
+        if (!empty($this->testOutput)) {
+            $testJSON = json_encode($testCases, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+            if ($testJSON !== false) {
+                file_put_contents($this->testOutput, $testJSON);
+            }
         }
 
         return true;
@@ -281,9 +307,12 @@ class psdContentBuilderCLI
             --help                   This text.
                                      defined in the package.xml-structure. Will overwrite existing classes, unless
                                      the option --ignore-version is specified.
-            --siteaccess  STRING    siteaccess that will be needed to perform database-actions. If left blank, the
+            --siteaccess   STRING    siteaccess that will be needed to perform database-actions. If left blank, the
                                      DefaultAccess is taken from site.ini.
+
             --verbose                Keeps the script telling about what it\'s doing.
+            --test-output  FILE      This file receives all test-cases in form of a JSON-array.
+                                     If not specified, test-cases are ignored.
 
             DEFINITIONS:
               PATH:                  Points to a folder or file and may contain wild-cards (eg. "*").

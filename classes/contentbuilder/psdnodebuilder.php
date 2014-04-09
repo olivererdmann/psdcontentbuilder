@@ -253,6 +253,18 @@ class psdNodeBuilder
             $this->publishNode($locationNode, $info, true);
         }
 
+        // Finally add test-cases, if available.
+
+        if (!empty($info->testCases)) {
+
+            foreach ($info->testCases as $case) {
+
+                $this->contentBuilder->addTestCase($object, $case);
+
+            }
+
+        }
+
     }
 
 
@@ -294,6 +306,13 @@ class psdNodeBuilder
                         $result->postPublishFields = $value;
                     } else {
                         $result->postPublishFields = array($value);
+                    }
+
+                    break;
+                case '_tests':
+
+                    if (is_array($value)) {
+                        $result->testCases = $value;
                     }
 
                     break;

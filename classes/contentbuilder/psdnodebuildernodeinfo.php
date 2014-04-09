@@ -56,4 +56,12 @@ class psdNodeBuilderNodeInfo {
      * @var array
      */
     public $children = [];
+
+    /**
+     * Test-cases for this object.
+     *
+     * @var array
+     */
+    public $testCases = [];
+
 }
