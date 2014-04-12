@@ -79,7 +79,7 @@ class psdNodeBuilder
      *
      * @param psdContentBuilder $builder psdContentBuilder Instance of the calling ContentBuilder.
      */
-    public function __construct($builder)
+    public function __construct(psdContentBuilder $builder)
     {
 
         $this->contentBuilder  = $builder;
@@ -473,7 +473,13 @@ class psdNodeBuilder
 
             $this->contentBuilder->execPath->add($language);
 
-            $dataMap = $object->attribute('data_map');
+            // Get current language version.
+            if ($language == $this->defaultLanguage) {
+                $dataMap = $object->dataMap();
+            } else {
+                $version = $content->fields->getCurrentDraft($language);
+                $dataMap = $object->fetchDataMap($version->attribute('version'), $language);
+            }
 
             foreach ($properties as $attribute => $value) {
 
