@@ -19,26 +19,16 @@ class ezDateTimeTypeBuilder extends psdAbstractDatatypeBuilder
      * If the value is an integer, it is treated as timestamp. If it's a string, it's tried to be interpreted as a
      * PHP DateTime String.
      *
-     * @param eZContentObject $object    Object to build the attribute for.
-     * @param string          $attribute Name of the Object.
-     * @param mixed           $content   Value to apply to the attribute.
+     * @param eZContentObject $object                    Object to build the attribute for.
+     * @param eZContentObjectAttribute $contentAttribute Current attribute to build.
+     * @param mixed           $content                   Value to apply to the attribute.
      *
      * @return void
      *
      * @throws Exception When the attribute is not found on the specified object.
      */
-    public function apply($object, $attribute, $content)
+    public function apply($object, $contentAttribute, $content)
     {
-
-        $dataMap = $object->attribute('data_map');
-
-        if (!array_key_exists($attribute, $dataMap)) {
-            throw new Exception(sprintf('Attribute %s not found on object.', $attribute));
-        }
-        $contentAttribute = $dataMap[$attribute];
-        $contentAttribute->setContent(null);
-        $contentAttribute->store();
-
 
         $dataType = new eZDateTimeType();
         $dataType->initializeObjectAttribute($contentAttribute, false, null);

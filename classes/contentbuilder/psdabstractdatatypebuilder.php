@@ -29,13 +29,13 @@ abstract class psdAbstractDatatypeBuilder
      * Keep in mind: custom datatype-builds need to handle yaml post-processing themselves (there is access to the
      * post-processor via $this->contentBuilder).
      *
-     * @param eZContentObject $object    Object to build the attribute for.
-     * @param string          $attribute Name of the Object.
-     * @param mixed           $content   Value to apply to the attribute.
+     * @param eZContentObject $object                    Object to build the attribute for.
+     * @param eZContentObjectAttribute $contentAttribute Current attribute to build.
+     * @param mixed           $content                   Value to apply to the attribute.
      *
      * @return void
      */
-    public abstract function apply($object, $attribute, $content);
+    abstract public function apply($object, $contentAttribute, $content);
 
 
 }
