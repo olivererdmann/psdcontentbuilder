@@ -30,9 +30,6 @@ class ezDateTimeTypeBuilder extends psdAbstractDatatypeBuilder
     public function apply($object, $attribute, $content)
     {
 
-        // Resolve possible Yaml-functions below this structure.
-        $content = $this->contentBuilder->postProcess($content);
-
         $dataMap = $object->attribute('data_map');
 
         if (!array_key_exists($attribute, $dataMap)) {
