@@ -275,20 +275,24 @@ class psdNodeBuilder
             throw new Exception(sprintf('Can not create Node, the class "%s" is not registered.', $classIdentifier));
         }
 
-        if (array_key_exists('name', $structure)) {
-            $result->name = $structure['name'];
-        } elseif (array_key_exists('title', $structure)) {
-            $result->name = $structure['title'];
-        }
+        $result->name = $this->getObjectNameWithPattern($class->ContentObjectName, $structure);
 
         if (empty($result->name)) {
-            throw new Exception('Required keys "name" or "title" for node are missing or empty.');
+            $class->name();
         }
 
         if (array_key_exists('children', $structure) && is_array($structure['children'])) {
             $result->children = $structure['children'];
         }
 
+        if (array_key_exists('_post_publish', $structure)) {
+            $result->setPostPublishFields($structure['_post_publish']);
+        }
+
+        $result->options = $this->getNodeInfoOptions($class, $structure);
+        $result->options['class_identifier'] = $classIdentifier;
+
+        $result->remoteId = $result->options['remote_id'];
 
         // First get fields for default language (no additional hierarchy).
         $result = $this->getNodeInfoFieldsForLanguage($result, $class, $structure, '');
@@ -302,11 +306,89 @@ class psdNodeBuilder
 
     }
 
+
+    /**
+     * Builds an object-name from the provided structure, based on the class's object-name-pattern.
+     *
+     * @param string $pattern eZ Object-Name-Pattern.
+     * @param array $structure Structure with attributes (array, not a data-map!)
+     * @return string Object name.
+     */
+    protected function getObjectNameWithPattern($pattern, $structure)
+    {
+
+        // get parts of object's name pattern( like <attr1|attr2>, <attr3> )
+        $objectNamePattern = '|<([^>]+)>|U';
+
+        $result = preg_replace_callback(
+            $objectNamePattern,
+            function ($matches) use ($structure) {
+
+                $tagName = str_replace("<", "", $matches[0]);
+                $tagName = str_replace(">", "", $tagName);
+
+                $tagParts = explode('|', $tagName);
+
+                foreach ($tagParts as $part) {
+                    if (array_key_exists($part, $structure) && !empty($structure[$part])) {
+                        return strval($structure[$part]);
+                    }
+                }
+
+                return '';
+
+            },
+            $pattern
+        );
+
+        return $result;
+
+    }
+
+
+    /**
+     * collects content-object-attributes (non-data-map attributes) from the strucutre.
+     *
+     * @param eZContentClass $class
+     * @param array $structure
+     * @return array
+     */
+    protected function getNodeInfoOptions(eZContentClass $class, array $structure)
+    {
+
+        $options = [
+            'remote_id' => $this->remoteIdPrefix.':'.md5((string) microtime().(string) mt_rand())
+        ];
+
+        foreach ($structure as $key => $value) {
+
+            $context = $this->getFieldContext($class, $key);
+
+            if ($context == self::FIELD_CONTEXT_CLASS) {
+                $options[$key] = $value;
+            }
+        }
+
+        return $options;
+
+    }
+
+
+    /**
+     * Collects data-map attributes per language from provided structure.
+     *
+     * @param psdNodeBuilderNodeInfo $nodeInfo Existing node-info to operate on.
+     * @param eZContentClass $class Class of the node.
+     * @param array $structure Structure to collect the attributes from.
+     * @param string $language Language-code, empty for default.
+     *
+     * @return psdNodeBuilderNodeInfo Amended node-info.
+     */
     protected function getNodeInfoFieldsForLanguage(
         psdNodeBuilderNodeInfo $nodeInfo,
         eZContentClass $class,
         array $structure,
-        string $language = ''
+        $language = ''
     ) {
 
         if (empty($language)) {
@@ -326,7 +408,6 @@ class psdNodeBuilder
             return $nodeInfo;
         }
 
-        $options = [];
         $attrs   = [];
 
         // Use either the the whole structure as context or just the part for the language.
@@ -346,53 +427,31 @@ class psdNodeBuilder
             // Process Yaml functions as they are encountered.
             $value = $this->contentBuilder->postProcessNode($value);
 
-            // Translate properties.
-            switch ($key) {
-                case 'postPublish':
-                    $nodeInfo->setPostPublishFieldsWithLanguage($value);
-                    break;
-                default:
+            // Translate properties. Only process data-map attributes according to the class-definition.
+            $context = $this->getFieldContext($class, $key);
 
-                    $context = $this->getFieldContext($class, $key);
+            if ($context == self::FIELD_CONTEXT_DATAMAP) {
 
-                    // Sort the options into different arrays depending on the class-definition.
-                    if ($context == self::FIELD_CONTEXT_CLASS) {
-                        $options[$key] = $value;
-                    } elseif ($context == self::FIELD_CONTEXT_DATAMAP) {
+                // Check if there's custom builder registered for this data-type.
+                $attr = $class->fetchAttributeByIdentifier($key);
+                if ($attr instanceof eZContentClassAttribute
+                    && array_key_exists($attr->attribute('data_type_string'), $this->dataTypeBuilders)
+                ) {
 
-                        // Check if there's custom builder registered for this data-type.
-                        $attr = $class->fetchAttributeByIdentifier($key);
-                        if ($attr instanceof eZContentClassAttribute
-                            && array_key_exists($attr->attribute('data_type_string'), $this->dataTypeBuilders)
-                        ) {
+                    $nodeInfo->addCustomFieldWithLanguage(
+                        $key,
+                        array($attr->attribute('data_type_string'), $value),
+                        $language
+                    );
 
-                            $nodeInfo->addCustomFieldWithLanguage(
-                                $key,
-                                array($attr->attribute('data_type_string'), $value),
-                                $language
-                            );
+                    continue;
+                }
 
-                            continue;
-                        }
-
-                        // Otherwise let the SQLi-Import handle this.
-                        $nodeInfo->addFieldWithLanguage($key, $value, $language);
-                    }
-
-            }//end switch
+                // Otherwise let the SQLi-Import handle this.
+                $nodeInfo->addFieldWithLanguage($key, $value, $language);
+            }
 
         }//end foreach
-
-        $options['class_identifier'] = $class->Identifier;
-
-        if (!isset($options['remote_id'])) {
-            $options['remote_id'] = $this->remoteIdPrefix.':'.md5((string) microtime().(string) mt_rand());
-        }
-
-        $nodeInfo->remoteId = $options['remote_id'];
-
-        // Create new ContentObject.
-        $nodeInfo->options = new \SQLIContentOptions($options);
 
         return $nodeInfo;
 
@@ -402,10 +461,11 @@ class psdNodeBuilder
     /**
      * Publishes a node with the specified info-set.
      *
-     * @param eZContentObjectTreeNode $locationNode
-     * @param psdNodeBuilderNodeInfo  $info
-     * @param boolean $postPublish    Defines if psdNodeBuilderNodeInfo::postPublishFields are evaluated.
+     * @param eZContentObjectTreeNode $locationNode Parent-node for the new node.
+     * @param psdNodeBuilderNodeInfo $info NodeInfo-Structure that defines the node to be built.
+     * @param boolean $postPublish Defines if psdNodeBuilderNodeInfo::postPublishFields are evaluated.
      *
+     * @throws Exception
      * @return eZContentObject
      */
     protected function publishNode(
@@ -414,11 +474,21 @@ class psdNodeBuilder
         $postPublish = false
     ) {
 
+        $emptyDefaultTranslation = false;
+        if (empty($info->fields[$this->defaultLanguage]) && empty($info->customFields[$this->defaultLanguage])) {
+            $emptyDefaultTranslation = true;
+        }
 
-        $content = \SQLIContent::create($info->options);
+        $options = new \SQLIContentOptions($info->options);
+        $content = \SQLIContent::create($options);
 
         // Create translations and add from-string-properties.
         foreach ($info->availableLanguages as $language) {
+
+            // Skip default language if empty.
+            if ($emptyDefaultTranslation && $language == $this->defaultLanguage) {
+                continue;
+            }
 
             // Properties always base on the default language.
             $properties = $info->fields[$this->defaultLanguage];
@@ -437,7 +507,7 @@ class psdNodeBuilder
             foreach ($properties as $property => $value) {
 
                 // Skip fields marked as post-Publish if not in Post-Publish mode.
-                if (!$postPublish && in_array($property, $info->postPublishFields[$language])) {
+                if (!$postPublish && in_array($property, $info->postPublishFields)) {
                     continue;
                 }
 
@@ -453,10 +523,15 @@ class psdNodeBuilder
             $content->addLocation($location, $content);
         }
 
-        $object  = $content->getRawContentObject();
+        $object = $content->getRawContentObject();
 
         // Build custom attributes for each language.
         foreach ($info->availableLanguages as $language) {
+
+            // Skip default language if empty.
+            if ($emptyDefaultTranslation && $language == $this->defaultLanguage) {
+                continue;
+            }
 
             // Properties always base on the default language.
             $properties = $info->customFields[$this->defaultLanguage];
@@ -477,14 +552,14 @@ class psdNodeBuilder
             if ($language == $this->defaultLanguage) {
                 $dataMap = $object->dataMap();
             } else {
-                $version = $content->fields->getCurrentDraft($language);
+                $version = $object->currentVersion(true);
                 $dataMap = $object->fetchDataMap($version->attribute('version'), $language);
             }
 
             foreach ($properties as $attribute => $value) {
 
                 // Skip fields marked as post-Publish if not in Post-Publish mode.
-                if (!$postPublish && in_array($attribute, $info->postPublishFields[$language])) {
+                if (!$postPublish && in_array($attribute, $info->postPublishFields)) {
                     continue;
                 }
 

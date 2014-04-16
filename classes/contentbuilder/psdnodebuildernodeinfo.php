@@ -47,7 +47,7 @@ class psdNodeBuilderNodeInfo {
     /**
      * Options are defined per object and not translated.
      *
-     * @var SQLIContentOptions
+     * @var array
      */
     public $options;
 
@@ -62,7 +62,6 @@ class psdNodeBuilderNodeInfo {
     public $availableLanguages = [];
 
 
-
     public function __construct(array $languages = array())
     {
 
@@ -71,9 +70,8 @@ class psdNodeBuilderNodeInfo {
         }
 
         foreach ($languages as $lang) {
-            $this->postPublishFields[$lang] = [];
-            $this->fields[$lang]            = [];
-            $this->customFields[$lang]      = [];
+            $this->fields[$lang]       = [];
+            $this->customFields[$lang] = [];
         }
 
     }
@@ -92,21 +90,7 @@ class psdNodeBuilderNodeInfo {
 
         $language = $this->addLanguage($language);
 
-        $this->fields[$language][$key] = $value;
-
-    }
-
-    public function setPostPublishFieldsWithLanguage($fields, $language = '')
-    {
-
-        $language = $this->addLanguage($language);
-
-        // PostPublish can be an array for multiple values or a string for a single value.
-        if (is_array($fields)) {
-            $this->postPublishFields[$language] = $fields;
-        } else {
-            $this->postPublishFields[$language] = array($fields);
-        }
+        $this->customFields[$language][$key] = $value;
 
     }
 
@@ -121,7 +105,24 @@ class psdNodeBuilderNodeInfo {
             $this->availableLanguages[] = $language;
         }
 
+        // Set the first valid language as default.
+        if (!isset($this->options['language'])) {
+            $this->options['language'] = $language;
+        }
+
         return $language;
+
+    }
+
+    public function setPostPublishFields($fields)
+    {
+
+        // PostPublish can be an array for multiple values or a string for a single value.
+        if (is_array($fields)) {
+            $this->postPublishFields = $fields;
+        } else {
+            $this->postPublishFields = array($fields);
+        }
 
     }
 
