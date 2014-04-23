@@ -599,6 +599,18 @@ class psdNodeBuilder
         // Reload object in order to reflect changes made during publishing.
         $object = eZContentObject::fetch($object->ID);
 
+        // Re-Publish additional languages.
+        foreach ($info->availableLanguages as $language) {
+
+            // Default-language is already published, skip it.
+            if ($language == $this->defaultLanguage) {
+                continue;
+            }
+
+            eZContentFunctions::updateAndPublishObject($object, ['language' => $language, 'attributes' => []]);
+
+        }
+
         return $object;
 
     }
