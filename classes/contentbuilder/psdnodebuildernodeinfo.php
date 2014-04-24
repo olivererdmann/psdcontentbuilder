@@ -85,6 +85,15 @@ class psdNodeBuilderNodeInfo {
 
     }
 
+
+    /**
+     * Adds a customFields with a given language.
+     * Custom fields are separately processed by dedicated data-type builders.
+     *
+     * @param $key
+     * @param $value
+     * @param string $language
+     */
     public function addCustomFieldWithLanguage($key, $value, $language = '')
     {
 
@@ -94,6 +103,15 @@ class psdNodeBuilderNodeInfo {
 
     }
 
+
+    /**
+     * Internal, adds a given language to the availableLanguages-array, which reoresents a list of
+     * the actual used language-codes. Also adds the first language to the options-array, marking it as
+     * default language for creating content.
+     *
+     * @param string $language Language code in the form `ger-DE`. If empty, the current locale is used.
+     * @return string Returns the provided language, or the current language-code.
+     */
     protected function addLanguage($language)
     {
 
@@ -114,6 +132,13 @@ class psdNodeBuilderNodeInfo {
 
     }
 
+
+    /**
+     * Marks field-names which will be re-published in the event all children are created.
+     * Setting field-names, replaces existing ones.
+     *
+     * @param string|array $fields Array of attribute-identifiers. If you provide a string, it is wrapped in an array.
+     */
     public function setPostPublishFields($fields)
     {
 
