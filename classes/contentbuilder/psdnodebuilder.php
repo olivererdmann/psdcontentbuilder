@@ -493,14 +493,12 @@ class psdNodeBuilder
             // Properties always base on the default language.
             $properties = $info->fields[$this->defaultLanguage];
 
-            // Distinguish between default and additional language.
-            if ($language == $this->defaultLanguage) {
+            // Merge properties of the default language with an additional language's properties.
+            if ($language != $this->defaultLanguage) {
                 $fields = $content->fields;
             } else {
                 $content->addTranslation($language);
-                $fields = $content->fields[$language];
-
-                // Merges properties of the default language with an additional language's properties.
+                $fields     = $content->fields[$language];
                 $properties = array_merge($properties, $info->fields[$language]);
             }
 
@@ -536,13 +534,8 @@ class psdNodeBuilder
             // Properties always base on the default language.
             $properties = $info->customFields[$this->defaultLanguage];
 
-            // Distinguish between default and additional language.
-            if ($language == $this->defaultLanguage) {
-                //$fields = $content->fields;
-            } else {
-                //$fields = $content->fields[$language];
-
-                // Merges properties of the default language with an additional language's properties.
+            // Merge properties of the default language with an additional language's properties.
+            if ($language != $this->defaultLanguage) {
                 $properties = array_merge($properties, $info->customFields[$language]);
             }
 
