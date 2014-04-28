@@ -1,0 +1,40 @@
+--- #Basic structure
+content:
+
+  - name:        Test Content
+    class:       frontpage
+    parentNode:  /
+    remote_id:   test
+    _post_publish: [layout]
+    short_title: Short Test
+    # Establishes "CSS Options" Overlay for Test-Content only.
+    metadata:
+      extraMeta: |
+        <link href="/common-secure-static/css/ezone-testcontent-overlay.css" media="all" rel="stylesheet" type="text/css">
+        <script type="text/javascript" src="/common-secure-static/js/ezone-testcontent-overlay.js" charset="utf-8"></script>
+    has_navigation: true
+    description: |
+      <h1>Frontpage Intro Text</h1>
+    tags:
+      - Tag 1
+      - Tag 2
+
+    ger-CH:
+      name: Test Content CH
+      short_title: Test CH
+      description: |
+        <h1>CH Description</h1>
+
+    ger-AT:
+      name: Test Content AT
+      short_title: Test AT
+      description: |
+        <h1>AT Description</h1>
+
+    children:
+
+      - name:        Daten
+        class:       folder
+        remote_id:   test:data
+        description: |
+          <h1>Child Folder</h1>
