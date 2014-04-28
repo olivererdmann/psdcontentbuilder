@@ -494,7 +494,7 @@ class psdNodeBuilder
             $properties = $info->fields[$this->defaultLanguage];
 
             // Merge properties of the default language with an additional language's properties.
-            if ($language != $this->defaultLanguage) {
+            if ($language == $this->defaultLanguage) {
                 $fields = $content->fields;
             } else {
                 $content->addTranslation($language);
