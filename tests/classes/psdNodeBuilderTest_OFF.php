@@ -7,7 +7,7 @@
  */
 
 
-class psdNodeBuilderTest  extends \PHPUnit_Framework_TestCase
+class psdNodeBuilderTest_OFF  extends \PHPUnit_Framework_TestCase
 {
 
     use Xpmock\TestCaseTrait;
