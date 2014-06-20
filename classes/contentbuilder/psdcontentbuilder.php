@@ -11,10 +11,18 @@
 require_once 'autoload.php';
 
 use Symfony\Component\Yaml\Parser;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBag;
 use extension\psdcontentbuilder\classes\psdPathLevels;
 
 class psdContentBuilder
 {
+
+    const INI_CONTENTBUILDER      = 'psdcontentbuilder.ini';
+    const INI_GROUP_VARIABLES     = 'Variables';
+    const INI_GROUP_HANDLERS      = 'Handlers';
+    const INI_KEY_YAMLFUNCTIONS   = 'YamlFunctions';
+    const INI_KEY_DATATYPEBUILDER = 'DatatypeBuilder';
+
 
     /**
      * The file to run.
@@ -81,6 +89,14 @@ class psdContentBuilder
 
 
     /**
+     * Holds configurable parameters, which can be used to create dynamic strings.
+     *
+     * @var ParameterBag
+     */
+    public $parameterBag;
+
+
+    /**
      * Creates a new instance and initializes it with a filename.
      * @todo Constructors for loading from string and array-structure.
      *
@@ -88,13 +104,33 @@ class psdContentBuilder
     public function __construct()
     {
 
-        $this->execPath = new psdPathLevels();
+        $this->execPath     = new psdPathLevels();
+        $this->parameterBag = new ParameterBag();
 
         // Initialize the YAML-Postprocessing.
         $this->loadPostProcessor();
+        $this->loadParameterBag();
 
     }
 
+    protected function loadParameterBag()
+    {
+
+        $ini = eZINI::instance(self::INI_CONTENTBUILDER);
+
+        if (!$ini->hasGroup(self::INI_GROUP_VARIABLES)) {
+            return;
+        }
+
+        $variables = $ini->group(self::INI_GROUP_VARIABLES);
+
+        if (empty($variables)) {
+            return;
+        }
+
+        $this->parameterBag->add($variables);
+
+    }
 
     /**
      * Loads and parses the specified YAML-file. The parsed structure is available through $this->structure.
@@ -111,20 +147,10 @@ class psdContentBuilder
     public function loadFromFile($fileName)
     {
 
-        $this->structure = null;
-
-        if (!file_exists($fileName) ||  (false === is_readable($fileName))) {
-            throw new \Symfony\Component\Yaml\Exception\ParseException(
-                sprintf('Unable to parse "%s" as the file is not readable.', $fileName)
-            );
-        }
-        $this->fileName       = $fileName;
+        $this->structure      = null;
         $this->remoteIdPrefix = basename($fileName);
-
-        $content = file_get_contents($this->fileName);
-
-        $this->yaml      = new Parser();
-        $this->structure = $this->yaml->parse($content);
+        $this->fileName       = $fileName;
+        $this->structure      = $this->parseFile($fileName);
 
     }
 
@@ -195,6 +221,30 @@ class psdContentBuilder
     {
 
         return $this->yaml;
+
+    }
+
+
+    public function parseFile($filename)
+    {
+
+        if (!file_exists($filename) ||  (false === is_readable($filename))) {
+            throw new \Symfony\Component\Yaml\Exception\ParseException(
+                sprintf('Unable to parse "%s" as the file is not readable.', $filename)
+            );
+        }
+
+        if (!($this->yaml instanceof Parser)) {
+            $this->yaml = new Parser();
+        }
+
+        $content = file_get_contents($filename);
+
+        if (!empty($content)) {
+            $content = $this->parameterBag->resolveString($content);
+        }
+
+        return $this->yaml->parse($content);
 
     }
 
@@ -457,14 +507,14 @@ class psdContentBuilder
 
         // Load the function-handlers from the INI.
         if (empty($handlers)) {
-            $ini = eZINI::instance('psdcontentbuilder.ini');
+            $ini = eZINI::instance(self::INI_CONTENTBUILDER);
 
             // No handlers, nothing to do.
-            if (!$ini->hasVariable('Handlers', 'YamlFunctions')) {
+            if (!$ini->hasVariable(self::INI_GROUP_HANDLERS, self::INI_KEY_YAMLFUNCTIONS)) {
                 return;
             }
 
-            $handlers = $ini->variable('Handlers', 'YamlFunctions');
+            $handlers = $ini->variable(self::INI_GROUP_HANDLERS, self::INI_KEY_YAMLFUNCTIONS);
         }
 
         $this->postProcessor->setBuilder($this);
