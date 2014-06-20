@@ -1,0 +1,9 @@
+--- # Test structure for psdContentBuilderTest
+content:
+
+  - name:        %test_name%
+    class:       frontpage
+    parentNode:  /
+    remote_id:   test
+    %test_key%: Short Test
+    children: %test_child%
