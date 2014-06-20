@@ -103,14 +103,14 @@ class psdNodeBuilder
     protected function loadDatatypeBuilders()
     {
         // Load the function-handlers from the INI.
-        $ini = eZINI::instance('psdcontentbuilder.ini');
+        $ini = eZINI::instance(psdContentBuilder::INI_CONTENTBUILDER);
 
         // No handlers, nothing to do.
-        if (!$ini->hasVariable('Handlers', 'DatatypeBuilder')) {
+        if (!$ini->hasVariable(psdContentBuilder::INI_GROUP_HANDLERS, psdContentBuilder::INI_KEY_DATATYPEBUILDER)) {
             return;
         }
 
-        $handlers = $ini->variable('Handlers', 'DatatypeBuilder');
+        $handlers = $ini->variable(psdContentBuilder::INI_GROUP_HANDLERS, psdContentBuilder::INI_KEY_DATATYPEBUILDER);
 
         if (!is_array($handlers)) {
             return;

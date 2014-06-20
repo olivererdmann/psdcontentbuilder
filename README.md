@@ -15,7 +15,8 @@ enable the creation of custom datatype-builders with great complexity (as long a
 
 * Define content-structures as YAML-files which are created in eZ Publish.
 * Structures can consist of any available content-class, with most data-types supported by the sqliimport-extension.
-* Supported data-types can easily be extended, by writing additional Datatype-Builders (based on psdAbstractDatatypeBuilder-class, regisitered in psdcontentbuilder.ini)
+* Built can be created in different languages.
+* Supported data-types can easily be extended, by writing additional Datatype-Builders (based on psdAbstractDatatypeBuilder-class, registered in psdcontentbuilder.ini)
 * There is currently a small collection of run-time functions, which can enhance the YAML-structure or can pull information into it.
 * Currently built-in functions are:
   * `ezpublish/fetch/MODULE/FUNCTION` access any eZ Publish fetch (defined by module/function) and re-map the attributes of results as needed. Return arrays or single objects.
@@ -51,7 +52,7 @@ ARGUMENTS
 --help                   This text.
                          defined in the package.xml-structure. Will overwrite existing classes, unless
                          the option --ignore-version is specified.
---siteaccess  STRING    siteaccess that will be needed to perform database-actions. If left blank, the
+--siteaccess  STRING     siteaccess that will be needed to perform database-actions. If left blank, the
                          DefaultAccess is taken from site.ini.
 --verbose                Keeps the script telling about what it\'s doing.
 
@@ -140,6 +141,128 @@ Creates a strukture like:
     * Child 1 (article)
     * Child 2 (article)
     * Child 3 (article)
+
+## Placeholder Variables
+Content-Builder supports Symfony's ParameterBag-feature to some extend, which allows you to use variable-placeholders inside of YAML-files.
+Variables are defined in psdcontentbuilder.ini, section "Variables". Each key is recognized as variable-name.
+In the YAML-files, you wrap the variable-name between two "%", just like you would in a Symfony configuration-file (eg. `%my_name%`).
+Unlike Symfony, you can't use the dot-syntax for variables (as eZ doesn't support dots in Ini-keys).
+Keep in mind, that this is a pre-processing feature. Variables are resolved from the raw file-content *before* parsing the YAML-file, no structural validation is performed at this point. 
+This allows for placeholders to be used in keys and also structural enhancements like raw YAML-Strings are possible. On the other hand this should be use with care.
+Error-handling is limited to undefined variables (Symfony will tell you when a YAML-file requests an undefined variable), and YAML-validation of the resulting code.
+
+By defining different values for different site-accesses, you can, for example, re-use a single Content-definition for multiple projects or stages.
+
+### Examples:
+*psdcontentbuilder.ini*
+```ini
+[Variables]
+test_name     = Contentbuilder Test
+test_key      = short_title
+test_children = [{name: Test Article, class: article, remote_id: test_article}]
+```
+
+*YAML-file*
+```
+content:
+  - name:        %test_name%
+    class:       frontpage
+    parentNode:  /
+    remote_id:   test
+    %test_key%: Short Test
+    children: %test_children%
+```
+
+*Result*
+```
+content:
+  - name:        Contentbuilder Test
+    class:       frontpage
+    parentNode:  /
+    remote_id:   test
+    short_title: Short Test
+    children: 
+      - name:      Test Article
+        class:     article
+        remote_id: test_article
+```
+
+## Multi-language nodes
+The Content-Builder provides with a simple, but flexible mechanism for creating translations, which,
+for example covers the following scenarios:
+* create a single default translation
+* a translation basing off the default translation, overriding only a few different attributes.
+* completely different set of attributes for each translation
+* Create only specific translations, without a default translation.
+
+In general, you always specify attributes for the default language, with no additional information required.
+In order to create a translation you simply wrap the differing attributes into a language-code-key (eg. `ger-DE:`).
+Translations always base off the default language, they receive all default definitions which can be overridden with language-specific values.
+You only define attributes where you need them, this allows for defining values exclusively for translations.
+Also, you may omit any attributes in your default definition, in that case, the default translation is also omitted. This allows you to
+create nodes, which are only available in certain languages, but have no default language.
+Please be aware, that the keys `class` and `remote_id` are only available at default-language level, as they can't be translated.
+The default language is internally mapped to it's specific language code. If the system's default language and a specified
+language code match, the keys are merged. This allows you to omit the default definition, but specify individual translations without basing off each other.
+
+### Examples
+Translation (ger-DE) based off the default (eng-US).
+Creates 2 translations, both share the image, but have their own names and descriptions.
+```
+name: Default Name
+class: frontpage
+remote_id: translated
+image: intro.jpg
+description: Default Text
+ger-DE:
+    name: Standardname
+    description: Standardtext
+```
+
+Different translations ger-DE and eng-US.
+Creates 2 translations, both share nothing.
+```
+class: frontpage
+remote_id: translated
+eng-US:
+    name: Default Name
+    image: intro-en.jpg
+    description: Default Text
+ger-DE:
+    image: intro-de.jpg
+    name: Standardname
+    description: Standardtext
+```
+
+Different a single translation ger-DE, omitting the default translation eng-US.
+Creates 2 translations, both share nothing.
+```
+class: frontpage
+remote_id: single-translation
+ger-DE:
+    image: intro-de.jpg
+    name: Standardname
+    description: Standardtext
+```
+
+Different translations ger-DE and eng-US.
+Creates 3 unique translations, all override name and description. Image is only defined for english and german.
+```
+class: frontpage
+remote_id: translated
+name: Default Name
+description: Default Text
+eng-US:
+    image: intro-en.jpg
+ger-DE:
+    image: intro-de.jpg
+    name: Standardname
+    description: Standardtext
+fr-FR:
+    name: Nom
+    description: texte de description
+```
+
 
 ## Include-function (built-in)
 

@@ -39,20 +39,7 @@ class psdIncludeYamlFunctionHandler extends psdAbstractYamlFunctionHandler
             $this->builder->execPath->addFile($file);
         }
 
-        $content = file_get_contents($file);
-
-        $parser  = null;
-
-        // Allow the parser to be set from out-side in order to carry over previously collected references.
-        if ($this->builder instanceof psdContentBuilder) {
-            $parser = $this->builder->getParser();
-        }
-
-        if (!($parser instanceof Parser)) {
-            $parser = new Parser();
-        }
-
-        $result = $parser->parse($content);
+        $result = $this->builder->parseFile($file);
 
         return $result;
 
