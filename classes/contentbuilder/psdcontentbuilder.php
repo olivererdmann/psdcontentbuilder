@@ -113,6 +113,13 @@ class psdContentBuilder
 
     }
 
+
+    /**
+     * Loads variable-definitions from psdcontentbuilder.ini and puts them into the parameter-bag.
+     * The parameter-bag is used to resolve placeholders in YAML-Files on parseFile().
+     *
+     * @return void
+     */
     protected function loadParameterBag()
     {
 
