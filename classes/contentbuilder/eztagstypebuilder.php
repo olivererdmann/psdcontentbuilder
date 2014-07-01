@@ -85,13 +85,13 @@ class eZTagsTypeBuilder extends psdAbstractDatatypeBuilder
     {
 
         $parts     = explode('/', trim($pathString, '/'));
-        $path      = '';
+        $path      = '/';
         $parentTag = null;
         $parentId  = 0;
         $tag       = null;
 
         foreach ($parts as $index => $part) {
-            $path .= '/'.$part;
+            $path .= $part.'/';
 
             // Fetches an array.
             $fetched = $this::fetchByRalPathString($path);
@@ -142,10 +142,7 @@ class eZTagsTypeBuilder extends psdAbstractDatatypeBuilder
             eZTagsObject::definition(),
             null,
             array(
-                'real_path_string' => array(
-                    'like',
-                    $realPathString.'%'
-                ),
+                'real_path_string' => $realPathString,
                 'main_tag_id'      => 0
             )
         );
